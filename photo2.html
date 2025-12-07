@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>金昇工作室水印 Pro v2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<!-- Google Fonts + 台灣常用字型 CDN -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+  body{font-family:'Noto Sans TC',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);margin:0;padding:20px 0;min-height:100vh;}
+  .container{max-width:1400px;margin:0 auto;background:white;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
+  header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:30px;text-align:center;}
+  header h1{font-size:2.8rem;margin:0;font-weight:700;}
+  header p{font-size:1.1rem;opacity:0.9;}
+  .main{display:flex;flex-wrap:wrap;}
+  .preview-area{flex:2;background:#0f0f1a;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:30px;}
+  #previewCanvas{max-width:100%;max-height:100%;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.6);transition:all 0.4s;position:absolute;}
+  .watermark-text{position:absolute;user-select:none;pointer-events:none;color:white;text-shadow:0 3px 12px rgba(0,0,0,0.8);}
+  .tile-preview{pointer-events:none;position:absolute;top:0;left:0;width:100%;height:100%;padding:30px;}
+  .controls{flex:1;min-width:380px;background:#fbfbfb;padding:40px 35px;}
+  .control-group{margin-bottom:30px;}
+  label{display:flex;align-items:center;justify-content:space-between;font-weight:600;color:#333;font-size:15px;}
+  .value{font-weight:700;color:#667eea;}
+  input[type="range"]{width:100%;height:10px;border-radius:10px;background:#ddd;outline:none;appearance:none;margin:14px 0;}
+  input[type="range"]::-webkit-slider-thumb{appearance:none;width:28px;height:28px;border-radius:50%;background:#667eea;cursor:pointer;box-shadow:0 5px 15px rgba(102,126,234,0.5);}
+  input[type="color"]{width:100%;height:56px;border:none;border-radius:14px;cursor:pointer;}
+  input[type="text"], select{font-size:16px;padding:16px;border:2px solid #eee;border-radius:14px;transition:0.3s;width:100%;box-sizing:border-box;}
+  input[type="text"]:focus, select:focus{border-color:#667eea;outline:none;}
+  input[type="file"]{width:100%;padding:16px;border:2px dashed #ccc;border-radius:14px;background:#fafafa;font-size:15px;}
+  .switch{position:relative;display:inline-block;width:70px;height:38px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.4s;border-radius:38px;}
+  .slider:before{position:absolute;content:"";height:30px;width:30px;left:4px;bottom:4px;background:white;transition:.4s;border-radius:50%;}
+  input:checked + .slider{background:#667eea;}
+  input:checked + .slider:before{transform:translateX(32px);}
+  .position-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+  .pos-btn{padding:18px;background:#f5f5f5;border-radius:14px;text-align:center;cursor:pointer;transition:0.3s;font-weight:600;}
+  .pos-btn:hover{background:#e6e6ff;}
+  .pos-btn.active{background:#667eea;color:white;}
+  button.main-btn{width:100%;padding:20px;margin-top:20px;border:none;border-radius:16px;font-size:19px;font-weight:700;color:white;cursor:pointer;transition:0.4s;}
+  #downloadBtn{background:#667eea;}
+  #batchBtn{background:#e91e63;display:none;}
+  #saveBtn{background:#4caf50;}
+  #loadBtn{background:#ff9800;}
+  button.main-btn:hover{transform:translateY(-4px);box-shadow:0 15px 30px rgba(0,0,0,0.25);}
+  .progress{margin-top:20px;height:10px;background:#eee;border-radius:5px;overflow:hidden;display:none;}
+  .progress-bar{height:100%;background:#667eea;width:0%;transition:all 0.5s;border-radius:5px;}
+  .btn-group{display:flex;gap:12px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>金昇工作室水印 Pro v2.0</h1>
+    <p>即時預覽 • 平鋪 • 拖曳定位 • 批量打包 ZIP • 字型選擇 • 設定儲存</p>
+  </header>
+
+  <div class="main">
+    <div class="preview-area" id="previewArea">
+      <canvas id="previewCanvas"></canvas>
+      <div id="watermarkText" class="watermark-text">© 2025 我的版權</div>
+      <div class="tile-preview" id="tilePreview"></div>
+      <div id="placeholder" style="color:#888;font-size:26px;z-index:1;">請上傳圖片（支援多選）</div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <input type="file" id="imageUpload" accept="image/*" multiple>
+        <small style="color:#888;display:block;margin-top:8px;">單張即時預覽 • 多張自動批次打包</small>
+      </div>
+
+      <div class="control-group">
+        <label>水印文字</label>
+        <input type="text" id="text" value="© 2025 我的版權" placeholder="輸入你的水印">
+      </div>
+
+      <div class="control-group">
+        <label>字型選擇</label>
+        <select id="fontFamily">
+          <option value="'Noto Sans TC', sans-serif">思源黑體 (Noto Sans TC)</option>
+          <option value="'Noto Serif TC', serif">思源宋體 (Noto Serif TC)</option>
+          <option value="'Taipei Sans TC Beta', sans-serif">台北黑體 (Taipei Sans)</option>
+          <option value="'JF Dot Jiskan', sans-serif">捷黑體 (JF Dot Jiskan)</option>
+          <option value="'PingFang TC', sans-serif">蘋方 (PingFang TC)</option>
+          <option value="'Helvetica Neue', 'Arial', sans-serif">Helvetica / Arial</option>
+          <option value="'Zen Old Mincho', serif">禪古力明朝 (Zen Old Mincho)</option>
+          <option value="cursive">英文手寫體 (Cursive)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>字型大小 <span class="value" id="sizeValue">48</span> px</label>
+        <input type="range" id="size" min="10" max="300" value="48">
+      </div>
+
+      <div class="control-group">
+        <label>文字顏色</label>
+        <input type="color" id="color" value="#ffffff">
+      </div>
+
+      <div class="control-group">
+        <label>透明度 <span class="value" id="opacityValue">55</span>%</label>
+        <input type="range" id="opacity" min="0" max="100" value="55">
+      </div>
+
+      <div class="control-group">
+        <label>旋轉角度 <span class="value" id="rotateValue">335</span>°</label>
+        <input type="range" id="rotate" min="0" max="360" value="335">
+      </div>
+
+      <div class="control-group">
+        <label>平鋪水印
+          <label class="switch">
+            <input type="checkbox" id="tileMode">
+            <span class="slider"></span>
+          </label>
+        </label>
+        <div id="tileOptions" style="margin-top:18px;display:none;">
+          <label>平鋪間距 <span class="value" id="tileGapValue">180</span> px</label>
+          <input type="range" id="tileGap" min="80" max="500" value="180">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>快速定位（單張模式）</label>
+        <div class="position-grid">
+          <div class="pos-btn" data-pos="tl">左上</div><div class="pos-btn" data-pos="tc">上中</div><div class="pos-btn" data-pos="tr">右上</div>
+          <div class="pos-btn" data-pos="cl">左中</div><div class="pos-btn" data-pos="cc">正中</div><div class="pos-btn" data-pos="cr">右中</div>
+          <div class="pos-btn" data-pos="bl">左下</div><div class="pos-btn" data-pos="bc">下中</div><div class="pos-btn active" data-pos="br">右下</div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="main-btn" id="saveBtn">💾 保存目前設定</button>
+        <button class="main-btn" id="loadBtn">📂 載入上次設定</button>
+      </div>
+
+      <button class="main-btn" id="downloadBtn">下載單張圖片</button>
+      <button class="main-btn" id="batchBtn">批量處理並下載 ZIP (<span id="count">0</span> 張)</button>
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const previewArea = document.getElementById('previewArea');
+const watermark = document.getElementById('watermarkText');
+const tilePreview = document.getElementById('tilePreview');
+const placeholder = document.getElementById('placeholder');
+
+let img = new Image();
+let files = [];
+let scale = 1, offsetX = 0, offsetY = 0;
+let watermarkX = 0.85, watermarkY = 0.85;
+let dragging = false;
+
+// ================ 設定儲存/載入 ================
+const SETTINGS_KEY = 'watermarkMasterPro_v2_settings';
+
+function saveSettings() {
+  const settings = {
+    text: document.getElementById('text').value,
+    fontFamily: document.getElementById('fontFamily').value,
+    size: document.getElementById('size').value,
+    color: document.getElementById('color').value,
+    opacity: document.getElementById('opacity').value,
+    rotate: document.getElementById('rotate').value,
+    tileMode: document.getElementById('tileMode').checked,
+    tileGap: document.getElementById('tileGap').value,
+    watermarkX, watermarkY
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  alert('✅ 設定已儲存！下次開啟會自動載入');
+}
+
+function loadSettings() {
+  const saved = localStorage.getItem(SETTINGS_KEY);
+  if (!saved) return alert('⚠️ 還沒有儲存的設定');
+  
+  const s = JSON.parse(saved);
+  document.getElementById('text').value = s.text || '© 2025 我的版權';
+  document.getElementById('fontFamily').value = s.fontFamily || "'Noto Sans TC', sans-serif";
+  document.getElementById('size').value = s.size || 48;
+  document.getElementById('color').value = s.color || '#ffffff';
+  document.getElementById('opacity').value = s.opacity || 55;
+  document.getElementById('rotate').value = s.rotate || 335;
+  document.getElementById('tileMode').checked = !!s.tileMode;
+  document.getElementById('tileGap').value = s.tileGap || 180;
+  watermarkX = s.watermarkX || 0.85;
+  watermarkY = s.watermarkY || 0.85;
+
+  document.getElementById('tileOptions').style.display = s.tileMode ? 'block' : 'none';
+  updateAll();
+  alert('✅ 已載入上次設定');
+}
+
+// ================ 其餘功能（保持不變，只加入字型參數） ================
+function updateAll() {
+  document.getElementById('sizeValue').textContent = document.getElementById('size').value;
+  document.getElementById('opacityValue').textContent = document.getElementById('opacity').value;
+  document.getElementById('rotateValue').textContent = document.getElementById('rotate').value;
+  document.getElementById('tileGapValue').textContent = document.getElementById('tileGap').value;
+
+  if (!img.src) return;
+  drawCanvas();
+  updateWatermarkOverlay();
+  updateTilePreview();
+}
+
+function resizeAndCenter() {
+  if (!img.src) return;
+  const areaW = previewArea.clientWidth - 60;
+  const areaH = previewArea.clientHeight - 60;
+  scale = Math.min(areaW / img.width, areaH / img.height, 1);
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+  offsetX = (previewArea.clientWidth - canvas.width) / 2;
+  offsetY = (previewArea.clientHeight - canvas.height) / 2;
+  canvas.style.left = offsetX + 'px';
+  canvas.style.top = offsetY + 'px';
+  updateAll();
+}
+
+function getFontString(size) {
+  return `bold ${size}px ${document.getElementById('fontFamily').value}, Arial, "Noto Sans TC"`;
+}
+
+function drawCanvas() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const text = document.getElementById('text').value || '水印';
+  const size = parseInt(document.getElementById('size').value) * scale;
+  const opacity = document.getElementById('opacity').value / 100;
+  const rotate = document.getElementById('rotate').value * Math.PI / 180;
+
+  ctx.font = getFontString(size);
+  ctx.fillStyle = document.getElementById('color').value;
+  ctx.globalAlpha = opacity;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (document.getElementById('tileMode').checked) {
+    const gap = parseInt(document.getElementById('tileGap').value) * scale;
+    for (let x = gap; x < canvas.width; x += gap) {
+      for (let y = gap; y < canvas.height; y += gap) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotate);
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      }
+    }
+  } else {
+    const x = canvas.width * watermarkX;
+    const y = canvas.height * watermarkY;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotate);
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+}
+
+function updateWatermarkOverlay() {
+  if (document.getElementById('tileMode').checked) {
+    watermark.style.display = 'none';
+    return;
+  }
+  watermark.style.display = 'block';
+  watermark.textContent = document.getElementById('text').value || '水印';
+  watermark.style.fontSize = (parseInt(document.getElementById('size').value) * scale) + 'px';
+  watermark.style.fontFamily = document.getElementById('fontFamily').value;
+  watermark.style.color = document.getElementById('color').value;
+  watermark.style.opacity = document.getElementById('opacity').value / 100;
+  watermark.style.transform = `translate(-50%,-50%) rotate(${document.getElementById('rotate').value}deg)`;
+  watermark.style.left = (offsetX + canvas.width * watermarkX) + 'px';
+  watermark.style.top = (offsetY + canvas.height * watermarkY) + 'px';
+}
+
+function updateTilePreview() {
+  tilePreview.innerHTML = '';
+  if (!document.getElementById('tileMode').checked || !img.src) return;
+
+  const gap = parseInt(document.getElementById('tileGap').value) * scale;
+  const size = parseInt(document.getElementById('size').value) * scale * 0.7;
+
+  for (let x = gap; x < canvas.width; x += gap) {
+    for (let y = gap; y < canvas.height; y += gap) {
+      const div = document.createElement('div');
+      div.textContent = document.getElementById('text').value || '水印';
+      div.style.position = 'absolute';
+      div.style.left = (offsetX + x) + 'px';
+      div.style.top = (offsetY + y) + 'px';
+      div.style.fontSize = size + 'px';
+      div.style.fontFamily = document.getElementById('fontFamily').value;
+      div.style.color = '#ffffff';
+      div.style.opacity = '0.18';
+      div.style.transform = `translate(-50%,-50%) rotate(${document.getElementById('rotate').value}deg)`;
+      div.style.pointerEvents = 'none';
+      div.style.userSelect = 'none';
+      tilePreview.appendChild(div);
+    }
+  }
+}
+
+// ==================== 事件監聽 ====================
+img.onload = resizeAndCenter;
+window.addEventListener('resize', resizeAndCenter);
+
+document.getElementById('imageUpload').addEventListener('change', e => {
+  files = Array.from(e.target.files);
+  document.getElementById('count').textContent = files.length;
+  document.getElementById('batchBtn').style.display = files.length > 1 ? 'block' : 'none';
+  document.getElementById('downloadBtn').style.display = files.length <= 1 ? 'block' : 'none';
+  
+  if (files.length === 0) {
+    placeholder.style.display = 'block';
+    return;
+  }
+  placeholder.style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = ev => { img.src = ev.target.result; };
+  reader.readAsDataURL(files[0]);
+});
+
+['text', 'size', 'color', 'opacity', 'rotate', 'tileGap', 'fontFamily'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateAll);
+});
+
+document.getElementById('tileMode').addEventListener('change', function() {
+  document.getElementById('tileOptions').style.display = this.checked ? 'block' : 'none';
+  updateAll();
+});
+
+// 九宮格、拖曳、單張下載、批次 ZIP 完全保留（只把 font 改成 getFontString）
+document.querySelectorAll('.pos-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (document.getElementById('tileMode').checked) return;
+    document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const map = {
+      tl:[0.15,0.15], tc:[0.5,0.15], tr:[0.85,0.15],
+      cl:[0.15,0.5], cc:[0.5,0.5], cr:[0.85,0.5],
+      bl:[0.15,0.85], bc:[0.5,0.85], br:[0.85,0.85]
+    };
+    [watermarkX, watermarkY] = map[btn.dataset.pos];
+    updateAll();
+  });
+});
+
+watermark.addEventListener('mousedown', e => {
+  if (document.getElementById('tileMode').checked) return;
+  dragging = true; e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const rect = previewArea.getBoundingClientRect();
+  const x = e.clientX - rect.left - offsetX;
+  const y = e.clientY - rect.top - offsetY;
+  watermarkX = Math.max(0.05, Math.min(0.95, x / canvas.width));
+  watermarkY = Math.max(0.05, Math.min(0.95, y / canvas.height));
+  updateAll();
+});
+document.addEventListener('mouseup', () => dragging = false);
+
+// 保存與載入按鈕
+document.getElementById('saveBtn').addEventListener('click', saveSettings);
+document.getElementById('loadBtn').addEventListener('click', loadSettings);
+
+// 單張下載（加入字型）
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!img.src) return alert('請先上傳圖片！');
+
+  const exportCanvas = document.createElement('canvas');
+  const ectx = exportCanvas.getContext('2d');
+  exportCanvas.width = img.width;
+  exportCanvas.height = img.height;
+  ectx.drawImage(img, 0, 0);
+
+  const text = document.getElementById('text').value || '水印';
+  const size = parseInt(document.getElementById('size').value);
+  const color = document.getElementById('color').value;
+  const opacity = document.getElementById('opacity').value / 100;
+  const rotate = document.getElementById('rotate').value * Math.PI / 180;
+  const tileMode = document.getElementById('tileMode').checked;
+  const tileGap = parseInt(document.getElementById('tileGap').value);
+
+  ectx.font = getFontString(size);
+  ectx.fillStyle = color;
+  ectx.globalAlpha = opacity;
+  ectx.textAlign = 'center';
+  ectx.textBaseline = 'middle';
+
+  if (tileMode) {
+    for (let x = tileGap; x < img.width; x += tileGap) {
+      for (let y = tileGap; y < img.height; y += tileGap) {
+        ectx.save();
+        ectx.translate(x, y);
+        ectx.rotate(rotate);
+        ectx.fillText(text, 0, 0);
+        ectx.restore();
+      }
+    }
+  } else {
+    const x = img.width * watermarkX;
+    const y = img.height * watermarkY;
+    ectx.save();
+    ectx.translate(x, y);
+    ectx.rotate(rotate);
+    ectx.fillText(text, 0, 0);
+    ectx.restore();
+  }
+
+  exportCanvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (files[0]?.name.split('.').slice(0,-1).join('.') || '水印圖片') + '_水印.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png', 0.98);
+});
+
+// 批次 ZIP（加入字型與位置）
+document.getElementById('batchBtn').addEventListener('click', async () => {
+  if (files.length <= 1) return;
+
+  const zip = new JSZip();
+  const progressContainer = document.querySelector('.progress');
+  const progressBar = document.getElementById('progressBar');
+  progressContainer.style.display = 'block';
+
+  const settings = {
+    text: document.getElementById('text').value || '水印',
+    font: document.getElementById('fontFamily').value,
+    size: parseInt(document.getElementById('size').value),
+    color: document.getElementById('color').value,
+    opacity: document.getElementById('opacity').value / 100,
+    rotate: document.getElementById('rotate').value * Math.PI / 180,
+    tileMode: document.getElementById('tileMode').checked,
+    tileGap: parseInt(document.getElementById('tileGap').value),
+    posX: watermarkX,
+    posY: watermarkY
+  };
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const blob = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const tempImg = new Image();
+        tempImg.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = tempImg.width;
+          c.height = tempImg.height;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(tempImg, 0, 0);
+
+          ctx.font = `bold ${settings.size}px ${settings.font}, Arial, "Noto Sans TC"`;
+          ctx.fillStyle = settings.color;
+          ctx.globalAlpha = settings.opacity;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          if (settings.tileMode) {
+            for (let x = settings.tileGap; x < tempImg.width; x += settings.tileGap) {
+              for (let y = settings.tileGap; y < tempImg.height; y += settings.tileGap) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(settings.rotate);
+                ctx.fillText(settings.text, 0, 0);
+                ctx.restore();
+              }
+            }
+          } else {
+            const px = tempImg.width * settings.posX;
+            const py = tempImg.height * settings.posY;
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(settings.rotate);
+            ctx.fillText(settings.text, 0, 0);
+            ctx.restore();
+          }
+          c.toBlob(resolve, 'image/png', 0.98);
+        };
+        tempImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    const ext = file.name.split('.').pop();
+    const name = file.name.replace(new RegExp(`\\.${ext}$`, 'i'), '') + '_水印.png';
+    zip.file(name, blob);
+
+    progressBar.style.width = ((i + 1) / files.length * 100) + '%';
+  }
+
+  const content = await zip.generateAsync({type: 'blob'});
+  const url = URL.createObjectURL(content);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '水印圖片合集_' + Date.now() + '.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  progressContainer.style.display = 'none';
+  progressBar.style.width = '0%';
+});
+
+// 啟動時自動載入上次設定
+window.addEventListener('load', () => {
+  setTimeout(loadSettings, 300); // 稍微延遲確保 DOM 就緒
+  updateAll();
+});
+</script>
+</body>
+</html>
