@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Taipei+Sans+TC+Beta&family=jf-openhuninn-2:wght@0.5;1&family=King+Nam+Lion&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Inter:wght@400;700&family=Playfair+Display&family=Dancing+Script&family=Bebas+Neue&display=swap" rel="stylesheet">
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
@@ -83,18 +84,27 @@
       </div>
 
       <div class="control-group">
-        <label>字型選擇</label>
-        <select id="fontFamily">
-          <option value="'Noto Sans TC', sans-serif">思源黑體 (Noto Sans TC)</option>
-          <option value="'Noto Serif TC', serif">思源宋體 (Noto Serif TC)</option>
-          <option value="'Taipei Sans TC Beta', sans-serif">台北黑體 (Taipei Sans)</option>
-          <option value="'JF Dot Jiskan', sans-serif">捷黑體 (JF Dot Jiskan)</option>
-          <option value="'PingFang TC', sans-serif">蘋方 (PingFang TC)</option>
-          <option value="'Helvetica Neue', 'Arial', sans-serif">Helvetica / Arial</option>
-          <option value="'Zen Old Mincho', serif">禪古力明朝 (Zen Old Mincho)</option>
-          <option value="cursive">英文手寫體 (Cursive)</option>
-        </select>
-      </div>
+  <label>字型選擇</label>
+  <select id="fontFamily">
+    <!-- 繁體中文 -->
+    <option value="'Noto Sans TC', sans-serif">思源黑體 Noto Sans TC（預設）</option>
+    <option value="'Noto Serif TC', serif">思源宋體 Noto Serif TC</option>
+    <option value="'Taipei Sans TC Beta', sans-serif">台北黑體 Taipei Sans TC（官方）</option>
+    <option value="'jf-openhuninn-2', cursive">jf 粉圓（超可愛手寫風）</option>
+    <option value="'King Nam Lion', serif">金萱體 King Nam Lion（高級感）</option>
+    <option value="'Ma Shan Zheng', cursive">手書體 Ma Shan Zheng（簽名感）</option>
+    <option value="'Liu Jian Mao Cao', cursive">劉堅毛草（狂草風）</option>
+    
+    <!-- 英文 & 設計字型 -->
+    <optgroup label="── 英文 / 設計字型 ──">
+      <option value="Inter, sans-serif">Inter（最潮現代無襯線）</option>
+      <option value="'Playfair Display', serif">Playfair Display（奢華襯線）</option>
+      <option value="'Dancing Script', cursive">Dancing Script（英文手寫）</option>
+      <option value="'Bebas Neue', display">Bebas Neue（海報粗黑）</option>
+      <option value="'Roboto', sans-serif">Roboto（經典穩重）</option>
+    </optgroup>
+  </select>
+</div>
 
       <div class="control-group">
         <label>字型大小 <span class="value" id="sizeValue">48</span> px</label>
@@ -526,3 +536,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+
